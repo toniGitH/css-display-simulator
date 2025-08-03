@@ -1,0 +1,1083 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Display Simulator</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+    * {
+        box-sizing: border-box;
+        font-family: Arial, sans-serif;
+    }
+    body {
+        margin: 0;
+        height: 100vh;
+        display: flex;
+        background: linear-gradient(135deg, #1e3c72, #2a5298);
+        overflow: hidden;
+    }
+    .container {
+        display: flex;
+        width: 100%;
+        height: 100vh;
+    }
+    .left-section {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        padding: 15px;
+    }
+    .header {
+        text-align: center;
+        margin-bottom: 20px;
+    }
+    .title {
+        font-size: 2em;
+        font-weight: bold;
+        color: white;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        margin-bottom: 10px;
+    }
+    .subtitle {
+        color: rgba(255,255,255,0.8);
+        font-size: 0.9em;
+        margin-bottom: 15px;
+    }
+    .canvas-container {
+        flex: 1;
+        background: white;
+        border-radius: 0;
+        padding: 0;
+        margin-bottom: 15px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+        overflow: auto;
+        position: relative;
+    }
+    .canvas {
+        min-height: 100%;
+        position: relative;
+        font-size: 14px;
+        line-height: 1.4;
+    }
+    .element {
+        color: white;
+        font-weight: bold;
+        font-size: 1.6em;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        user-select: none;
+        position: relative;
+        border: 2px solid transparent;
+        min-height: 20px;
+        line-height: 1.2;
+        display: inline-block;
+        vertical-align: middle;
+    }
+    .element:hover {
+        border: 1px solid #333;
+    }
+    .element.inline-block {
+        height: auto;
+        line-height: normal;
+        vertical-align: middle;
+        min-width: fit-content;
+    }
+    .element.inline {
+        height: auto;
+        line-height: normal;
+        vertical-align: middle;
+    }
+    .element.selected {
+        border: 2px dashed #ff4444;
+        box-shadow: 0 0 10px rgba(255,68,68,0.3);
+    }
+    .element-delete {
+        position: absolute;
+        top: 2px;
+        right: 4px;
+        background: rgba(255,0,0,0.9);
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 18px;
+        height: 18px;
+        font-size: 0.7em;
+        cursor: pointer;
+        display: none;
+        z-index: 10;
+    }
+    .element:hover .element-delete {
+        display: block;
+    }
+    .element-info {
+        position: absolute;
+        top: 2px;
+        left: 4px;
+        background: rgba(0,0,0,0.7);
+        color: white;
+        font-size: 0.6em;
+        padding: 2px 4px;
+        border-radius: 3px;
+        display: none;
+    }
+    .element:hover .element-info {
+        display: block;
+    }
+    .element-content {
+        text-align: center;
+        display: inline-block;
+        white-space: nowrap;
+    }
+    .right-section {
+        width: 340px;
+        background: rgba(255,255,255,0.95);
+        backdrop-filter: blur(10px);
+        display: flex;
+        flex-direction: column;
+        padding: 15px;
+        overflow-y: auto;
+    }
+    .control-panel {
+        background: white;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 15px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    .control-panel h3 {
+        margin: 0 0 15px 0;
+        color: #333;
+        border-bottom: 2px solid #4CAF50;
+        padding-bottom: 5px;
+        font-size: 1em;
+    }
+    .control-group {
+        margin-bottom: 12px;
+    }
+    .control-group label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+        color: #555;
+        font-size: 0.9em;
+    }
+    .control-group input, .control-group select {
+        width: 100%;
+        padding: 6px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 0.9em;
+    }
+    .border-controls {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+    }
+    .border-width {
+        flex: 1;
+        min-width: 60px;
+    }
+    .border-style {
+        flex: 2;
+    }
+    .border-color {
+        width: 40px;
+        padding: 2px;
+    }
+    .display-selector {
+        display: flex;
+        gap: 5px;
+        margin-bottom: 15px;
+    }
+    .display-btn {
+        flex: 1;
+        padding: 8px 4px;
+        border: none;
+        border-radius: 5px;
+        background: #f5f5f5;
+        color: #333;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-weight: bold;
+        font-size: 0.8em;
+    }
+    .display-btn:hover {
+        background: #e0e0e0;
+    }
+    .display-btn.active {
+        background: #4CAF50;
+        color: white;
+        box-shadow: 0 2px 8px rgba(76,175,80,0.3);
+    }
+    .width-controls {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+    }
+    .width-input {
+        flex: 2;
+        min-width: 80px;
+    }
+    .width-unit {
+        width: 70px;
+        flex: 1;
+    }
+    .spacing-grid {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 6px;
+        margin-top: 8px;
+    }
+    .spacing-input {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+    .spacing-input label {
+        font-size: 0.7em;
+        margin-bottom: 2px;
+    }
+    .spacing-input input {
+        width: 50px;
+        padding: 4px;
+        text-align: center;
+        font-size: 0.8em;
+    }
+    .buttons-container {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 15px;
+    }
+    .margin-auto-controls {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+    }
+    .btn {
+        flex: 1;
+        padding: 8px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-weight: bold;
+        transition: all 0.3s ease;
+        font-size: 0.85em;
+    }
+    .btn-primary {
+        background: #4CAF50;
+        color: white;
+    }
+    .btn-primary:hover {
+        background: #45a049;
+    }
+    .btn-reset {
+        background: #ff9800;
+        color: white;
+        flex: 0 0 auto;
+        width: 40px;
+        padding: 8px;
+    }
+    .BTN-reset:hover {
+        background: #e68900;
+    }
+    .btn-danger {
+        background: #f44336;
+        color: white;
+    }
+    .btn-danger:hover {
+        background: #da190b;
+    }
+    .btn-warning {
+        background: #ff9800;
+        color: white;
+    }
+    .btn-warning:hover {
+        background: #e68900;
+    }
+    .info-panel {
+        background: #e3f2fd;
+        border-left: 4px solid #2196F3;
+        padding: 10px;
+        border-radius: 4px;
+        font-size: 0.85em;
+        line-height: 1.4;
+    }
+    .info-panel h4 {
+        margin: 0 0 8px 0;
+        color: #1976D2;
+    }
+    .disabled {
+        opacity: 0.5;
+        pointer-events: none;
+    }
+    .warning-text {
+        color: #f44336;
+        font-size: 0.8em;
+        font-style: italic;
+        margin-top: 2px;
+    }
+    .element-list {
+        max-height: 200px;
+        overflow-y: auto;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 5px;
+    }
+    .element-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px;
+        margin: 2px 0;
+        background: #f5f5f5;
+        border-radius: 5px;
+        font-size: 0.8em;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    .element-item:hover {
+        background: #e8e8e8;
+    }
+    .element-item.selected-item {
+        background: #e3f2fd;
+        border: 1px solid #2196F3;
+    }
+    .element-item-info {
+        display: flex;
+        flex-direction: column;
+    }
+    .element-item-name {
+        font-weight: bold;
+        margin-bottom: 2px;
+    }
+    .element-item-display {
+        font-size: 0.75em;
+        color: #666;
+        background: #ddd;
+        padding: 1px 4px;
+        border-radius: 3px;
+        display: inline-block;
+    }
+    .element-item button {
+        background: #f44336;
+        color: white;
+        border: none;
+        border-radius: 3px;
+        padding: 4px 8px;
+        font-size: 0.7em;
+        cursor: pointer;
+        margin-left: 8px;
+    }
+    .no-selection {
+        text-align: center;
+        color: #999;
+        font-style: italic;
+        padding: 20px;
+        background: #f9f9f9;
+        border-radius: 5px;
+        margin: 10px 0;
+    }
+</style>
+</head>
+<body>
+<div class="container">
+    <div class="left-section">
+        <div class="header">
+            <div class="title">DISPLAY SIMULATOR</div>
+            <div class="subtitle">Selecciona un elemento para cambiar sus propiedades</div>
+        </div>
+        <div class="canvas-container">
+            <div class="canvas" id="canvas"></div>
+        </div>
+    </div>
+    
+    <div class="right-section">
+        <div class="control-panel">
+            <h3>Control de Elementos</h3>
+            <div class="buttons-container">
+                <button class="btn btn-primary" id="add-element">Añadir</button>
+                <button class="btn btn-warning" id="reset-elements">Reset</button>
+                <button class="btn btn-danger" id="clear-elements">Limpiar</button>
+            </div>
+        </div>
+        
+        <div id="element-controls" class="disabled">
+            <div class="control-panel">
+                <h3 id="display-title">Display</h3>
+                <div class="display-selector">
+                    <button class="display-btn" data-display="block">BLOCK</button>
+                    <button class="display-btn" data-display="inline">INLINE</button>
+                    <button class="display-btn" data-display="inline-block">I-BLOCK</button>
+                </div>
+            </div>
+            
+            <div class="control-panel">
+                <h3 id="border-title">Border</h3>
+                <div class="border-controls">
+                    <div class="control-group">
+                        <label>Grosor</label>
+                        <input type="number" id="border-width" class="border-width" min="0" max="20" value="0">
+                    </div>
+                    <div class="control-group">
+                        <label>Tipo</label>
+                        <select id="border-style" class="border-style">
+                            <option value="none">None</option>
+                            <option value="solid">Solid</option>
+                            <option value="dashed">Dashed</option>
+                            <option value="dotted">Dotted</option>
+                            <option value="double">Double</option>
+                            <option value="groove">Groove</option>
+                            <option value="ridge">Ridge</option>
+                            <option value="inset">Inset</option>
+                            <option value="outset">Outset</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <label>Color</label>
+                        <input type="color" id="border-color" class="border-color" value="#000000">
+                    </div>
+                </div>
+                <div class="warning-text" id="border-warning" style="display: none;">
+                    * inline: solo respeta border horizontal en flujo
+                </div>
+            </div>
+            
+            <div class="control-panel">
+                <h3 id="dimension-title">Dimensión</h3>
+                <div class="control-group">
+                    <label>Ancho (width)</label>
+                    <div class="width-controls">
+                        <input type="number" id="width-value" class="width-input" min="0" max="500" value="100">
+                        <select id="width-unit" class="width-unit">
+                            <option value="px">px</option>
+                            <option value="%">%</option>
+                            <option value="auto">auto</option>
+                        </select>
+                    </div>
+                    <div class="warning-text" id="width-warning" style="display: none;">
+                        * inline no respeta width
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <label>Alto (height)</label>
+                    <input type="number" id="height-value" min="0" max="300" value="50">
+                    <div class="warning-text" id="height-warning" style="display: none;">
+                        * inline no respeta height
+                    </div>
+                </div>
+            </div>
+            
+            <div class="control-panel">
+                <h3 id="margin-auto-title">Margin 0px auto</h3>
+                <div class="margin-auto-controls">
+                    <button class="btn btn-primary" id="apply-margin-auto">Aplicar Margin 0px auto</button>
+                    <button class="btn btn-reset" id="reset-margin" title="Restablecer márgenes a 0"><i class="fas fa-rotate-right"></i></button>
+                </div>
+                <div class="warning-text" id="margin-auto-warning" style="display: none;">
+                    * Solo afecta márgenes horizontales en elementos block con ancho definido
+                </div>
+            </div>
+            
+            <div class="control-panel">
+                <h3 id="margin-title">Margin</h3>
+                <div class="spacing-grid">
+                    <div class="spacing-input">
+                        <label>All</label>
+                        <input type="number" id="margin-all" min="0" max="50" value="0">
+                    </div>
+                    <div class="spacing-input">
+                        <label>Top</label>
+                        <input type="number" id="margin-top" min="0" max="50" value="0">
+                    </div>
+                    <div class="spacing-input">
+                        <label>Right</label>
+                        <input type="text" id="margin-right" value="0">
+                    </div>
+                    <div class="spacing-input">
+                        <label>Bottom</label>
+                        <input type="number" id="margin-bottom" min="0" max="50" value="0">
+                    </div>
+                    <div class="spacing-input">
+                        <label>Left</label>
+                        <input type="text" id="margin-left" value="0">
+                    </div>
+                </div>
+                <div class="warning-text" id="margin-warning" style="display: none;">
+                    * inline solo respeta margin horizontal
+                </div>
+            </div>
+            
+            <div class="control-panel">
+                <h3 id="padding-title">Padding</h3>
+                <div class="spacing-grid">
+                    <div class="spacing-input">
+                        <label>All</label>
+                        <input type="number" id="padding-all" min="0" max="50" value="0">
+                    </div>
+                    <div class="spacing-input">
+                        <label>Top</label>
+                        <input type="number" id="padding-top" min="0" max="50" value="0">
+                    </div>
+                    <div class="spacing-input">
+                        <label>Right</label>
+                        <input type="number" id="padding-right" min="0" max="50" value="0">
+                    </div>
+                    <div class="spacing-input">
+                        <label>Bottom</label>
+                        <input type="number" id="padding-bottom" min="0" max="50" value="0">
+                    </div>
+                    <div class="spacing-input">
+                        <label>Left</label>
+                        <input type="number" id="padding-left" min="0" max="50" value="0">
+                    </div>
+                </div>
+                <div class="warning-text" id="padding-warning" style="display: none;">
+                    * inline: padding vertical no afecta el flujo
+                </div>
+            </div>
+        </div>
+        
+        <div class="info-panel" id="info-panel">
+            <h4>Simulador de Display CSS</h4>
+            <div>
+                Selecciona un elemento para ver cómo se comportan las diferentes propiedades de display:
+                <br><br>
+                <strong>Block:</strong> Ocupa toda la línea<br>
+                <strong>Inline:</strong> Solo el espacio del contenido<br>
+                <strong>Inline-block:</strong> Híbrido de ambos
+            </div>
+        </div>
+        
+        <div class="element-list" id="element-list">
+            <div class="no-selection" id="no-selection">
+                <i class="fas fa-mouse-pointer"></i><br>
+                Haz clic en un elemento para editarlo
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+class DisplaySimulator {
+    constructor() {
+        this.canvas = document.getElementById('canvas');
+        this.elementCount = 0;
+        this.selectedElement = null;
+        this.elements = [];
+        this.lastColor = null;
+        
+        this.init();
+    }
+    
+    init() {
+        this.setupEventListeners();
+        this.addDefaultElements();
+        this.updateCanvas();
+        this.updateUI();
+    }
+    
+    setupEventListeners() {
+        document.querySelectorAll('.display-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                if (this.selectedElement) {
+                    this.setElementDisplay(this.selectedElement, e.target.dataset.display);
+                }
+            });
+        });
+        
+        document.getElementById('add-element').addEventListener('click', () => this.addElement());
+        document.getElementById('reset-elements').addEventListener('click', () => this.resetElements());
+        document.getElementById('clear-elements').addEventListener('click', () => this.clearElements());
+        document.getElementById('apply-margin-auto').addEventListener('click', () => this.applyMarginAuto());
+        document.getElementById('reset-margin').addEventListener('click', () => this.resetMargin());
+        
+        this.setupPropertyControls();
+    }
+    
+    setupPropertyControls() {
+        document.getElementById('border-width').addEventListener('input', () => this.updateSelectedElementFromControls());
+        document.getElementById('border-style').addEventListener('change', () => this.updateSelectedElementFromControls());
+        document.getElementById('border-color').addEventListener('input', () => this.updateSelectedElementFromControls());
+        
+        document.getElementById('width-value').addEventListener('input', () => this.updateSelectedElementFromControls());
+        document.getElementById('width-unit').addEventListener('change', () => this.updateSelectedElementFromControls());
+        document.getElementById('height-value').addEventListener('input', () => this.updateSelectedElementFromControls());
+        
+        document.getElementById('margin-all').addEventListener('input', () => this.updateMarginAll());
+        ['top', 'right', 'bottom', 'left'].forEach(direction => {
+            document.getElementById(`margin-${direction}`).addEventListener('input', () => this.updateMarginDirection(direction));
+        });
+        
+        document.getElementById('padding-all').addEventListener('input', () => this.updatePaddingAll());
+        ['top', 'right', 'bottom', 'left'].forEach(direction => {
+            document.getElementById(`padding-${direction}`).addEventListener('input', () => this.updatePaddingDirection(direction));
+        });
+    }
+    
+    getDefaultElementProperties(display = 'block') {
+        const defaults = {
+            'block': {
+                width: { value: 'auto', unit: 'auto' },
+                height: { value: 'auto', unit: 'px' },
+                margin: { top: 0, right: 0, bottom: 0, left: 0 },
+                padding: { top: 0, right: 0, bottom: 0, left: 0 },
+                border: { width: 0, style: 'none', color: '#000000' }
+            },
+            'inline': {
+                width: { value: 'auto', unit: 'auto' },
+                height: { value: 'auto', unit: 'px' },
+                margin: { top: 0, right: 0, bottom: 0, left: 0 },
+                padding: { top: 0, right: 0, bottom: 0, left: 0 },
+                border: { width: 0, style: 'none', color: '#000000' }
+            },
+            'inline-block': {
+                width: { value: 'auto', unit: 'auto' },
+                height: { value: 'auto', unit: 'px' },
+                margin: { top: 0, right: 0, bottom: 0, left: 0 },
+                padding: { top: 0, right: 0, bottom: 0, left: 0 },
+                border: { width: 0, style: 'none', color: '#000000' }
+            }
+        };
+        
+        return defaults[display];
+    }
+    
+    setElementDisplay(elementId, display) {
+        const element = this.elements.find(e => e.id === elementId);
+        if (!element) return;
+        
+        element.display = display;
+        
+        const defaults = this.getDefaultElementProperties(display);
+        element.width = { ...defaults.width };
+        element.height = { ...defaults.height };
+        element.margin = { ...defaults.margin };
+        element.padding = { ...defaults.padding };
+        
+        this.updateCanvas();
+        this.updateControlsFromElement(element);
+        this.updateDisplayButtons();
+        this.updateWarnings();
+        this.updateElementList();
+    }
+    
+    addDefaultElements() {
+        for (let i = 0; i < 3; i++) {
+            this.addElement('block');
+        }
+    }
+    
+    addElement(display = 'block') {
+        this.elementCount++;
+        const defaults = this.getDefaultElementProperties(display);
+        
+        const element = {
+            id: this.elementCount,
+            width: { ...defaults.width },
+            height: { ...defaults.height },
+            margin: { top: 0, right: 0, bottom: 0, left: 0 },
+            padding: { ...defaults.padding },
+            border: { ...defaults.border },
+            background: this.getContrastingColor(),
+            display: display
+        };
+        
+        this.elements.push(element);
+        this.updateCanvas();
+        this.updateElementList();
+    }
+    
+    deleteElement(id) {
+        this.elements = this.elements.filter(e => e.id !== id);
+        if (this.selectedElement === id) {
+            this.selectedElement = null;
+        }
+        this.updateCanvas();
+        this.updateUI();
+    }
+    
+    resetElements() {
+        this.elements = [];
+        this.elementCount = 0;
+        this.selectedElement = null;
+        this.lastColor = null;
+        this.addDefaultElements();
+        this.updateElementList();
+        this.updateUI();
+    }
+    
+    clearElements() {
+        this.elements = [];
+        this.elementCount = 0;
+        this.selectedElement = null;
+        this.lastColor = null;
+        this.updateCanvas();
+        this.updateUI();
+    }
+    
+    applyMarginAuto() {
+        if (!this.selectedElement) return;
+        
+        const element = this.elements.find(e => e.id === this.selectedElement);
+        if (!element) return;
+        
+        element.margin = { top: 0, right: 'auto', bottom: 0, left: 'auto' };
+        
+        this.updateControlsFromElement(element);
+        this.updateCanvas();
+        this.updateWarnings();
+        this.updateElementList();
+    }
+    
+    resetMargin() {
+        if (!this.selectedElement) return;
+        
+        const element = this.elements.find(e => e.id === this.selectedElement);
+        if (!element) return;
+        
+        element.margin = { top: 0, right: 0, bottom: 0, left: 0 };
+        
+        this.updateControlsFromElement(element);
+        this.updateCanvas();
+        this.updateWarnings();
+        this.updateElementList();
+    }
+    
+    updateCanvas() {
+        this.canvas.innerHTML = '';
+        
+        this.elements.forEach(element => {
+            const div = document.createElement('div');
+            div.className = 'element';
+            div.dataset.id = element.id;
+            div.classList.add(element.display.replace('inline-block', 'inline-block'));
+            
+            div.innerHTML = `
+                <div class="element-info">${element.display}</div>
+                <button class="element-delete">×</button>
+                <span class="element-content">ELEMENTO ${element.id}</span>
+            `;
+            div.querySelector('.element-content').style.whiteSpace = 'nowrap';
+            
+            div.style.background = element.background;
+            div.style.display = element.display;
+            
+            if (element.display === 'inline' || element.display === 'inline-block') {
+                div.style.width = element.width.unit === 'auto' ? 'fit-content' : element.width.value + element.width.unit;
+            } else if (element.display === 'block' && element.width.unit === 'auto') {
+                div.style.width = '100%';
+            } else {
+                div.style.width = element.width.value + element.width.unit;
+            }
+            
+            if (element.display === 'inline' || element.display === 'inline-block' || element.height.unit === 'auto') {
+                div.style.height = 'auto';
+            } else {
+                div.style.height = element.height.value + element.height.unit;
+            }
+            
+            div.style.marginTop = typeof element.margin.top === 'number' ? element.margin.top + 'px' : element.margin.top;
+            div.style.marginRight = typeof element.margin.right === 'number' ? element.margin.right + 'px' : element.margin.right;
+            div.style.marginBottom = typeof element.margin.bottom === 'number' ? element.margin.bottom + 'px' : element.margin.bottom;
+            div.style.marginLeft = typeof element.margin.left === 'number' ? element.margin.left + 'px' : element.margin.left;
+            
+            div.style.paddingTop = element.padding.top + 'px';
+            div.style.paddingRight = element.padding.right + 'px';
+            div.style.paddingBottom = element.padding.bottom + 'px';
+            div.style.paddingLeft = element.padding.left + 'px';
+            
+            div.style.border = `${element.border.width}px ${element.border.style} ${element.border.color}`;
+            
+            if (element.display === 'inline') {
+                div.style.display = 'inline';
+                div.style.verticalAlign = 'middle';
+                div.style.lineHeight = 'normal';
+            } else {
+                div.style.display = element.display;
+            }
+            
+            const deleteButton = div.querySelector('.element-delete');
+            deleteButton.addEventListener('click', () => this.deleteElement(element.id));
+            
+            div.addEventListener('click', (e) => {
+                if (!e.target.classList.contains('element-delete')) {
+                    this.selectElement(element.id);
+                }
+            });
+            
+            this.canvas.appendChild(div);
+        });
+        
+        this.updateSelectedElementVisual();
+    }
+    
+    selectElement(id) {
+        this.selectedElement = id;
+        const element = this.elements.find(e => e.id === id);
+        
+        if (element) {
+            this.updateControlsFromElement(element);
+            this.updateDisplayButtons();
+            this.updateWarnings();
+        }
+        
+        this.updateSelectedElementVisual();
+        this.updateUI();
+    }
+    
+    updateControlsFromElement(element) {
+        document.getElementById('display-title').textContent = `Display - Elemento ${element.id}`;
+        document.getElementById('border-title').textContent = `Border - Elemento ${element.id}`;
+        document.getElementById('dimension-title').textContent = `Dimensión - Elemento ${element.id}`;
+        document.getElementById('margin-auto-title').textContent = `Margin 0px auto - Elemento ${element.id}`;
+        document.getElementById('margin-title').textContent = `Margin - Elemento ${element.id}`;
+        document.getElementById('padding-title').textContent = `Padding - Elemento ${element.id}`;
+        
+        document.getElementById('border-width').value = element.border.width;
+        document.getElementById('border-style').value = element.border.style;
+        document.getElementById('border-color').value = element.border.color;
+        
+        document.getElementById('width-value').value = element.width.value === 'auto' ? 100 : element.width.value;
+        document.getElementById('width-unit').value = element.width.unit;
+        
+        document.getElementById('height-value').value = element.height.value === 'auto' ? 50 : element.height.value;
+        
+        const marginValues = Object.values(element.margin);
+        const allMarginSame = marginValues.every(val => val === marginValues[0]) && typeof marginValues[0] === 'number';
+        document.getElementById('margin-all').value = allMarginSame ? marginValues[0] : '';
+        Object.entries(element.margin).forEach(([direction, value]) => {
+            document.getElementById(`margin-${direction}`).value = value;
+        });
+        
+        const paddingValues = Object.values(element.padding);
+        const allPaddingSame = paddingValues.every(val => val === paddingValues[0]);
+        document.getElementById('padding-all').value = allPaddingSame ? paddingValues[0] : '';
+        Object.entries(element.padding).forEach(([direction, value]) => {
+            document.getElementById(`padding-${direction}`).value = value;
+        });
+    }
+    
+    updateMarginAll() {
+        if (!this.selectedElement) return;
+        
+        const element = this.elements.find(e => e.id === this.selectedElement);
+        if (!element) return;
+        
+        const value = parseInt(document.getElementById('margin-all').value) || 0;
+        
+        ['top', 'right', 'bottom', 'left'].forEach(direction => {
+            element.margin[direction] = value;
+            document.getElementById(`margin-${direction}`).value = value;
+        });
+        
+        this.updateCanvas();
+        this.updateWarnings();
+        this.updateElementList();
+    }
+    
+    updatePaddingAll() {
+        if (!this.selectedElement) return;
+        
+        const element = this.elements.find(e => e.id === this.selectedElement);
+        if (!element) return;
+        
+        const value = parseInt(document.getElementById('padding-all').value) || 0;
+        
+        ['top', 'right', 'bottom', 'left'].forEach(direction => {
+            element.padding[direction] = value;
+            document.getElementById(`padding-${direction}`).value = value;
+        });
+        
+        this.updateCanvas();
+        this.updateWarnings();
+        this.updateElementList();
+    }
+    
+    updateMarginDirection(direction) {
+        if (!this.selectedElement) return;
+        
+        const element = this.elements.find(e => e.id === this.selectedElement);
+        if (!element) return;
+        
+        const inputValue = document.getElementById(`margin-${direction}`).value;
+        element.margin[direction] = inputValue === 'auto' ? 'auto' : parseInt(inputValue) || 0;
+        
+        const marginValues = Object.values(element.margin);
+        const allMarginSame = marginValues.every(val => val === marginValues[0]) && typeof marginValues[0] === 'number';
+        document.getElementById('margin-all').value = allMarginSame ? marginValues[0] : '';
+        
+        this.updateCanvas();
+        this.updateWarnings();
+        this.updateElementList();
+    }
+    
+    updatePaddingDirection(direction) {
+        if (!this.selectedElement) return;
+        
+        const element = this.elements.find(e => e.id === this.selectedElement);
+        if (!element) return;
+        
+        element.padding[direction] = parseInt(document.getElementById(`padding-${direction}`).value) || 0;
+        
+        const paddingValues = Object.values(element.padding);
+        const allPaddingSame = paddingValues.every(val => val === paddingValues[0]);
+        document.getElementById('padding-all').value = allPaddingSame ? paddingValues[0] : '';
+        
+        this.updateCanvas();
+        this.updateWarnings();
+        this.updateElementList();
+    }
+    
+    updateDisplayButtons() {
+        if (!this.selectedElement) return;
+        
+        const element = this.elements.find(e => e.id === this.selectedElement);
+        if (!element) return;
+        
+        document.querySelectorAll('.display-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.display === element.display);
+        });
+    }
+    
+    updateSelectedElementFromControls() {
+        if (!this.selectedElement) return;
+        
+        const element = this.elements.find(e => e.id === this.selectedElement);
+        if (!element) return;
+        
+        element.border = {
+            width: parseInt(document.getElementById('border-width').value) || 0,
+            style: document.getElementById('border-style').value,
+            color: document.getElementById('border-color').value
+        };
+        
+        const widthValue = document.getElementById('width-value').value;
+        const widthUnit = document.getElementById('width-unit').value;
+        element.width = { value: widthUnit === 'auto' ? 'auto' : parseInt(widthValue) || 100, unit: widthUnit };
+        
+        const heightValue = document.getElementById('height-value').value;
+        element.height = { value: heightValue === '' ? 'auto' : parseInt(heightValue) || 50, unit: 'px' };
+        
+        this.updateCanvas();
+        this.updateWarnings();
+        this.updateElementList();
+    }
+    
+    updateSelectedElementVisual() {
+        document.querySelectorAll('.element').forEach(el => {
+            el.classList.toggle('selected', parseInt(el.dataset.id) === this.selectedElement);
+        });
+    }
+    
+    updateElementList() {
+        const list = document.getElementById('element-list');
+        list.innerHTML = '';
+        
+        if (this.elements.length === 0) {
+            list.innerHTML = '<div style="text-align: center; color: #999; padding: 10px;">No hay elementos</div>';
+            return;
+        }
+        
+        this.elements.forEach(element => {
+            const item = document.createElement('div');
+            item.className = 'element-item';
+            if (element.id === this.selectedElement) {
+                item.classList.add('selected-item');
+            }
+            
+            item.innerHTML = `
+                <div class="element-item-info" onclick="simulator.selectElement(${element.id})" style="cursor: pointer; flex: 1;">
+                    <div class="element-item-name">Elemento ${element.id}</div>
+                    <span class="element-item-display">${element.display}</span>
+                </div>
+                <button onclick="simulator.deleteElement(${element.id})">×</button>
+            `;
+            
+            list.appendChild(item);
+        });
+    }
+    
+    updateUI() {
+        const hasSelection = this.selectedElement !== null;
+        const controlsContainer = document.getElementById('element-controls');
+        const noSelectionMsg = document.getElementById('no-selection');
+        
+        if (hasSelection) {
+            controlsContainer.classList.remove('disabled');
+            noSelectionMsg.style.display = 'none';
+        } else {
+            controlsContainer.classList.add('disabled');
+            noSelectionMsg.style.display = 'block';
+            
+            document.getElementById('display-title').textContent = 'Display';
+            document.getElementById('border-title').textContent = 'Border';
+            document.getElementById('dimension-title').textContent = 'Dimensión';
+            document.getElementById('margin-auto-title').textContent = 'Margin 0px auto';
+            document.getElementById('margin-title').textContent = 'Margin';
+            document.getElementById('padding-title').textContent = 'Padding';
+        }
+    }
+    
+    updateWarnings() {
+        if (!this.selectedElement) return;
+        
+        const element = this.elements.find(e => e.id === this.selectedElement);
+        if (!element) return;
+        
+        const isInline = element.display === 'inline';
+        
+        const warnings = {
+            'border-warning': isInline,
+            'width-warning': isInline,
+            'height-warning': isInline,
+            'margin-warning': isInline,
+            'margin-auto-warning': element.display !== 'block' || element.width.unit === 'auto',
+            'padding-warning': isInline
+        };
+        
+        Object.entries(warnings).forEach(([id, show]) => {
+            document.getElementById(id).style.display = show ? 'block' : 'none';
+        });
+    }
+    
+    getContrastingColor() {
+        const colors = [
+            '#4CAF50', '#2196F3', '#FF9800', '#9C27B0',
+            '#F44336', '#00BCD4', '#8BC34A', '#FF5722',
+            '#3F51B5', '#E91E63', '#009688', '#FFC107',
+            '#795548', '#607D8B', '#FF4081', '#536DFE'
+        ];
+        
+        const availableColors = this.lastColor
+            ? colors.filter(color => {
+                const rgb1 = this.hexToRgb(color);
+                const rgb2 = this.hexToRgb(this.lastColor);
+                const diff = Math.abs(rgb1.r - rgb2.r) + Math.abs(rgb1.g - rgb2.g) + Math.abs(rgb1.b - rgb2.b);
+                return diff > 200;
+            })
+            : colors;
+        
+        const color = availableColors[Math.floor(Math.random() * availableColors.length)];
+        this.lastColor = color;
+        return color;
+    }
+    
+    hexToRgb(hex) {
+        const r = parseInt(hex.slice(1, 3), 16);
+        const g = parseInt(hex.slice(3, 5), 16);
+        const b = parseInt(hex.slice(5, 7), 16);
+        return { r, g, b };
+    }
+}
+
+let simulator;
+
+document.addEventListener('DOMContentLoaded', () => {
+    simulator = new DisplaySimulator();
+});
+</script>
+</body>
+</html>
